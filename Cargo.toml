@@ -1,0 +1,12 @@
+[package]
+name = "choice"
+version = "0.0.0"
+authors = ["Jonathan Nadal <jon.nadal@gmail.com>"]
+license = "MIT"
+edition = "2018"
+
+description = "Similar to `either` but supports an unbounded number of variants."
+repository = "https://github.com/jonnadal/choice"
+readme = "README.md"
+categories = ["data-structures", "mathematics", "rust-patterns"]
+keywords = ["coproduct", "either", "sum", "union", "variant"]
