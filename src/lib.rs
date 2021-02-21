@@ -99,11 +99,11 @@
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Debug, Formatter};
 
-#[derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd)]
 /// Represents a choice between two types, which you can compose to represent a choice between more
 /// types -- `Choice<C, Choice<A, B>>` for instance.
 ///
 /// See the [top-level crate docs](crate) for more details.
+#[derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub enum Choice<L, R> {
     /// The "left" case.
@@ -137,6 +137,7 @@ impl<A> Choice<A, Never> {
 /// Represents an uninhabited type. This is a placeholder until the built-in
 /// [never](https://doc.rust-lang.org/std/primitive.never.html) type is stabilized.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub enum Never { }
 
 impl Display for Never {
