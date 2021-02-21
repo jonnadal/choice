@@ -15,9 +15,9 @@
 //! struct B;
 //! struct C;
 //! let choices: Vec<choice![A, B, C]> = vec![
-//!     Choice::new(A),
-//!     Choice::new(B).or(),
-//!     Choice::new(C).or().or(),
+//!     choice!(0, A),
+//!     choice!(1, B),
+//!     choice!(2, C),
 //! ];
 //!
 //! // Furthermore, by implementing a trait for two patterns...
@@ -106,13 +106,13 @@
 //!
 //! # Macros
 //!
-//! The [`choice!`] macro provides syntactic sugar for a type representing the above pattern, which
+//! The [`choice!`] macro provides syntactic sugar for a type or value of the above pattern, which
 //! is particularly useful when there are many choices:
 //!
 //! ```rust
 //! # use choice::{choice, Choice, Never};
 //! let x1: choice![u64, &'static str, char, String, i8] =
-//!     Choice::new('x').or().or();
+//!     choice!(2, 'x');
 //! let x2: Choice<u64, Choice<&'static str, Choice<char, Choice<String, Choice<i8, Never>>>>> =
 //!     Choice::new('x').or().or();
 //! assert_eq!(x1, x2);
@@ -125,7 +125,7 @@
 //!
 //! ```rust
 //! # use choice::{Choice, choice, choice_at, choice_unreachable};
-//! let c: choice![u8, char] = Choice::new('?').or();
+//! let c: choice![u8, char] = choice!(1, '?');
 //! match c {
 //!     choice_at!(0, v) => {
 //!         panic!("Unexpected match: {}", v);
@@ -196,19 +196,33 @@ impl Display for Never {
     }
 }
 
-/// Syntactic sugar for a type representing a [`Choice`] between multiple types.
+/// Syntactic sugar for a type representing a [`Choice`] between multiple types or a value in this
+/// `Choice`.
 ///
 /// # Example
 ///
 /// ```rust
 /// use choice::{Choice, choice};
 /// let c: choice![u64, &'static str, char, String, i8] =
-///     Choice::new('c').or().or();
+///     choice!(2, 'c'); //           ^^^^ index 2
 /// ```
 #[macro_export]
 macro_rules! choice {
+    // Types.
     [$t:ty] => ($crate::Choice<$t, $crate::Never>);
     [$t1:ty, $($t2:ty),+] => ($crate::Choice<$t1, choice![$($t2),+]>);
+
+    // Values.
+    (0, $x:expr) => ($crate::Choice::new($x));
+    (1, $x:expr) => (choice!(0, $x).or());
+    (2, $x:expr) => (choice!(1, $x).or());
+    (3, $x:expr) => (choice!(2, $x).or());
+    (4, $x:expr) => (choice!(3, $x).or());
+    (5, $x:expr) => (choice!(4, $x).or());
+    (6, $x:expr) => (choice!(5, $x).or());
+    (7, $x:expr) => (choice!(6, $x).or());
+    (8, $x:expr) => (choice!(7, $x).or());
+    (9, $x:expr) => (choice!(8, $x).or());
 }
 
 /// Syntactic sugar for destructuring a [`Choice`] between multiple types.
@@ -219,7 +233,7 @@ macro_rules! choice {
 ///
 /// ```rust
 /// use choice::{Choice, choice, choice_at, choice_unreachable};
-/// let c: choice![u8, char] = Choice::new('?').or();
+/// let c: choice![u8, char] = choice!(1, '?');
 /// match c {
 ///     choice_at!(0, v) => {
 ///         panic!("Unexpected match: {}", v);
@@ -259,7 +273,7 @@ macro_rules! choice_at {
 ///
 /// ```rust
 /// use choice::{Choice, choice, choice_at, choice_unreachable};
-/// let c: choice![u8, char] = Choice::new('?').or();
+/// let c: choice![u8, char] = choice!(1, '?');
 /// match c {
 ///     choice_at!(0, v) => {
 ///         panic!("Unexpected match: {}", v);
@@ -308,47 +322,47 @@ mod test {
 
     #[test]
     fn can_compare() {
-        let c1: choice![u8, char] = Choice::new(1);
-        let c2: choice![u8, char] = Choice::new(2);
-        let c3: choice![u8, char] = Choice::new('1').or();
-        let c4: choice![u8, char] = Choice::new('2').or();
+        let c1: choice![&'static str, char] = choice!(0, "a");
+        let c2: choice![&'static str, char] = choice!(0, "b");
+        let c3: choice![&'static str, char] = choice!(1, 'a');
+        let c4: choice![&'static str, char] = choice!(1, 'b');
 
         assert!(c1 < c2);
         assert!(c2 < c3); // leftmost element is considered smallest
         assert!(c3 < c4);
 
-        assert_eq!(c1, Choice::new(1));
-        assert_eq!(c2, Choice::new(2));
-        assert_eq!(c3, Choice::new('1').or());
-        assert_eq!(c4, Choice::new('2').or());
+        assert_eq!(c1, choice!(0, "a"));
+        assert_eq!(c2, choice!(0, "b"));
+        assert_eq!(c3, choice!(1, 'a'));
+        assert_eq!(c4, choice!(1, 'b'));
 
         // Elements with unmatched positions are never equal, even if the values are equal.
-        let c1: choice![u8, u8] = Choice::new(1);
-        let c2: choice![u8, u8] = Choice::new(1).or();
+        let c1: choice![char, char] = choice!(0, 'a');
+        let c2: choice![char, char] = choice!(1, 'a');
         assert_ne!(c1, c2);
     }
 
     #[test]
     fn can_debug() {
-        let c1: choice![u8, char] = Choice::new(1);
-        let c2: choice![u8, char] = Choice::new('2').or();
-        assert_eq!(format!("{:?}", c1), "1");
-        assert_eq!(format!("{:?}", c2), "'2'");
+        let c1: choice![&'static str, char] = choice!(0, "a");
+        let c2: choice![&'static str, char] = choice!(1, 'b');
+        assert_eq!(format!("{:?}", c1), "\"a\"");
+        assert_eq!(format!("{:?}", c2), "'b'");
     }
 
     #[test]
     fn can_display() {
-        let c1: choice![u8, char] = Choice::new(1);
-        let c2: choice![u8, char] = Choice::new('2').or();
-        assert_eq!(format!("{}", c1), "1");
-        assert_eq!(format!("{}", c2), "2");
+        let c1: choice![&'static str, char] = choice!(0, "a");
+        let c2: choice![&'static str, char] = choice!(1, 'b');
+        assert_eq!(format!("{}", c1), "a");
+        assert_eq!(format!("{}", c2), "b");
     }
 
     #[test]
     fn can_destructure() {
-        let c1: choice![u8, char] = Choice::new(1);
+        let c1: choice![&'static str, char] = choice!(0, "a");
         if let choice_at!(0, v) = c1 {
-            assert_eq!(v, 1);
+            assert_eq!(v, "a");
         } else {
             panic!("Expected match.");
         }
@@ -356,13 +370,13 @@ mod test {
             panic!("Unexpected match.");
         }
 
-        let c2: choice![u8, char] = Choice::new('2').or();
+        let c2: choice![&'static str, char] = choice!(1, 'b');
         match c2 {
             choice_at!(0, _v) => {
                 panic!("Unexpected match.");
             }
             choice_at!(1, v) => {
-                assert_eq!(v, '2');
+                assert_eq!(v, 'b');
             }
             choice_unreachable!(2) => {
                 unreachable!();
@@ -373,10 +387,10 @@ mod test {
     #[test]
     fn smoke_test() {
         let choices: Vec<choice![u8, char, &'static str, String]> = vec![
-            Choice::new(1),
-            Choice::new('2').or(),
-            Choice::new("3").or().or(),
-            Choice::new("4".to_string()).or().or().or(),
+            choice!(0, 1),
+            choice!(1, '2'),
+            choice!(2, "3"),
+            choice!(3, "4".to_string()),
         ];
         assert_eq!(
             format!("{:?}", choices),
@@ -388,10 +402,10 @@ mod test {
             Choice::new("4".to_string()).or().or().or(),
         ]);
         assert_ne!(choices, vec![
-            Choice::new(1),
-            Choice::new('2').or(),
-            Choice::new("three").or().or(),
-            Choice::new("4".to_string()).or().or().or(),
+            choice!(0, 1),
+            choice!(1, '2'),
+            choice!(2, "three"),
+            choice!(3, "4".to_string()),
         ]);
     }
 }
