@@ -1,6 +1,7 @@
-//! Rust has a built in tuple `(A, B, C, ...)` to represent a "product" or "intersection" of types.
-//! The language lacks a generic syntax for the converse: a choice among multiple types, also known
-//! as a union type `A + B + C ...` in [other programming
+//! Rust has a built in [`tuple`](https://doc.rust-lang.org/std/primitive.tuple.html) `(A, B, C,
+//! ...)` to represent a "product" or "intersection" of types.  The language lacks a generic syntax
+//! for the converse: a choice among multiple types, also known as a union type `A + B + C ...` in
+//! [other programming
 //! languages](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html) (which
 //! are also related to "sum types" and "coproducts"). `Choice` provides a pattern and some
 //! syntactic sugar to bridge this gap.
