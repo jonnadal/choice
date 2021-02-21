@@ -1,10 +1,7 @@
-//! Rust has a built in [`tuple`](https://doc.rust-lang.org/std/primitive.tuple.html) `(A, B, C,
-//! ...)` to represent a "product" or "intersection" of types.  The language lacks a generic syntax
-//! for the converse: a choice among multiple types, also known as a union type `A + B + C ...` in
-//! [other programming
-//! languages](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html) (which
-//! are also related to "sum types" and "coproducts"). `Choice` provides a pattern and some
-//! syntactic sugar to bridge this gap.
+//! Rust has a built in [tuple](https://doc.rust-lang.org/std/primitive.tuple.html) `(A, B, C,
+//! ...)` to represent a "product" of types.  The language lacks a generic syntax for the converse:
+//! a choice among multiple types, also known as a sum type (or "coproduct") `A + B + C + ...`.
+//! This library provides a pattern and macros to bridge this gap.
 //!
 //! # Example
 //!
@@ -33,7 +30,7 @@
 //! impl T for C {}
 //! fn f(t: impl T) {}
 //! for x in choices {
-//!     f(x);
+//!     f(x); // accepts values of type `choice![A, B, C]`
 //! }
 //! ```
 //!
@@ -102,6 +99,7 @@
 //!
 //! By implementing trait `T` for `Choice<A: T, Never>` and `Choice<A: T, B: T>`, the trait is also
 //! implemented for any combination of choices. See the [Example](#example) section above or
+//! alternatively
 //! [stateright::actor::Actor](https://docs.rs/stateright/latest/stateright/actor/trait.Actor.html#foreign-impls)
 //! for a real-world example from another library.
 //!
@@ -125,7 +123,7 @@
 //! checker](https://rustc-dev-guide.rust-lang.org/pat-exhaustive-checking.html).
 //!
 //! ```rust
-//! # use choice::{Choice, choice, choice_at, choice_unreachable};
+//! # use choice::{choice, choice_at, choice_unreachable};
 //! let c: choice![u8, char] = choice!(1, '?');
 //! match c {
 //!     choice_at!(0, v) => {
@@ -221,7 +219,7 @@ impl Display for Never {
 /// # Example
 ///
 /// ```rust
-/// use choice::{Choice, choice};
+/// use choice::choice;
 /// let c: choice![u64, &'static str, char, String, i8] =
 ///     choice!(2, 'c'); //           ^^^^ index 2
 /// ```
@@ -251,7 +249,7 @@ macro_rules! choice {
 /// # Example
 ///
 /// ```rust
-/// use choice::{Choice, choice, choice_at, choice_unreachable};
+/// use choice::{choice, choice_at, choice_unreachable};
 /// let c: choice![u8, char] = choice!(1, '?');
 /// match c {
 ///     choice_at!(0, v) => {
@@ -291,7 +289,7 @@ macro_rules! choice_at {
 /// # Example
 ///
 /// ```rust
-/// use choice::{Choice, choice, choice_at, choice_unreachable};
+/// use choice::{choice, choice_at, choice_unreachable};
 /// let c: choice![u8, char] = choice!(1, '?');
 /// match c {
 ///     choice_at!(0, v) => {
