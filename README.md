@@ -3,7 +3,8 @@
 [![LICENSE](https://img.shields.io/crates/l/choice.svg)](https://github.com/jonnadal/choice/blob/master/LICENSE)
 
 This crate is similar to [`either`](https://crates.io/crates/either) but
-supports an unbounded number of variants.
+supports an unbounded number of variants. See [the API
+docs](https://docs.rs/choice) for examples and more details.
 
 ## Contribution
 
