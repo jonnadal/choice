@@ -164,12 +164,12 @@ pub use Choice::{L, R};
 impl<A, B> Choice<A, B> {
     /// Constructs a [`Choice`] between two types, where the "decision" is of the first type.
     pub fn new(choice: A) -> Self {
-        Choice::L(choice)
+        L(choice)
     }
 
     /// Wraps an existing [`Choice`] with an additional chooseable type.
     pub fn or<L>(self) -> Choice<L, Choice<A, B>> {
-        Choice::R(self)
+        R(self)
     }
 }
 
@@ -177,8 +177,8 @@ impl<A> Choice<A, Never> {
     /// Returns the "left" value, as the right value is provably uninhabited.
     pub fn get(&self) -> &A {
         match self {
-            Choice::L(l) => l,
-            Choice::R(_) => unreachable!(),
+            L(l) => l,
+            R(_) => unreachable!(),
         }
     }
 }
@@ -186,8 +186,8 @@ impl<A> Choice<A, Never> {
 impl<A, B> Display for Choice<A, B> where A: Display, B: Display {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         match self {
-            Choice::L(v) => v.fmt(f),
-            Choice::R(v) => v.fmt(f),
+            L(v) => v.fmt(f),
+            R(v) => v.fmt(f),
         }
     }
 }
@@ -195,8 +195,8 @@ impl<A, B> Display for Choice<A, B> where A: Display, B: Display {
 impl<A, B> Debug for Choice<A, B> where A: Debug, B: Debug {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         match self {
-            Choice::L(v) => v.fmt(f),
-            Choice::R(v) => v.fmt(f),
+            L(v) => v.fmt(f),
+            R(v) => v.fmt(f),
         }
     }
 }
@@ -265,16 +265,16 @@ macro_rules! choice {
 /// ```
 #[macro_export]
 macro_rules! choice_at {
-    (0, $v:ident) => ($crate::Choice::L($v));
-    (1, $v:ident) => ($crate::Choice::R(choice_at!(0, $v)));
-    (2, $v:ident) => ($crate::Choice::R(choice_at!(1, $v)));
-    (3, $v:ident) => ($crate::Choice::R(choice_at!(2, $v)));
-    (4, $v:ident) => ($crate::Choice::R(choice_at!(3, $v)));
-    (5, $v:ident) => ($crate::Choice::R(choice_at!(4, $v)));
-    (6, $v:ident) => ($crate::Choice::R(choice_at!(5, $v)));
-    (7, $v:ident) => ($crate::Choice::R(choice_at!(6, $v)));
-    (8, $v:ident) => ($crate::Choice::R(choice_at!(7, $v)));
-    (9, $v:ident) => ($crate::Choice::R(choice_at!(8, $v)));
+    (0, $v:ident) => ($crate::L($v));
+    (1, $v:ident) => ($crate::R(choice_at!(0, $v)));
+    (2, $v:ident) => ($crate::R(choice_at!(1, $v)));
+    (3, $v:ident) => ($crate::R(choice_at!(2, $v)));
+    (4, $v:ident) => ($crate::R(choice_at!(3, $v)));
+    (5, $v:ident) => ($crate::R(choice_at!(4, $v)));
+    (6, $v:ident) => ($crate::R(choice_at!(5, $v)));
+    (7, $v:ident) => ($crate::R(choice_at!(6, $v)));
+    (8, $v:ident) => ($crate::R(choice_at!(7, $v)));
+    (9, $v:ident) => ($crate::R(choice_at!(8, $v)));
 }
 
 /// Syntactic sugar for an unreachable [`Choice`], which is only needed because the Rust
@@ -305,15 +305,15 @@ macro_rules! choice_at {
 /// ```
 #[macro_export]
 macro_rules! choice_unreachable {
-    (1) => ($crate::Choice::R(_));
-    (2) => ($crate::Choice::R(choice_unreachable!(1)));
-    (3) => ($crate::Choice::R(choice_unreachable!(2)));
-    (4) => ($crate::Choice::R(choice_unreachable!(3)));
-    (5) => ($crate::Choice::R(choice_unreachable!(4)));
-    (6) => ($crate::Choice::R(choice_unreachable!(5)));
-    (7) => ($crate::Choice::R(choice_unreachable!(6)));
-    (8) => ($crate::Choice::R(choice_unreachable!(7)));
-    (9) => ($crate::Choice::R(choice_unreachable!(8)));
+    (1) => ($crate::R(_));
+    (2) => ($crate::R(choice_unreachable!(1)));
+    (3) => ($crate::R(choice_unreachable!(2)));
+    (4) => ($crate::R(choice_unreachable!(3)));
+    (5) => ($crate::R(choice_unreachable!(4)));
+    (6) => ($crate::R(choice_unreachable!(5)));
+    (7) => ($crate::R(choice_unreachable!(6)));
+    (8) => ($crate::R(choice_unreachable!(7)));
+    (9) => ($crate::R(choice_unreachable!(8)));
 }
 
 #[cfg(test)]
