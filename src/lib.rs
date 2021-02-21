@@ -1,24 +1,24 @@
 //! Rust has a built in [tuple](https://doc.rust-lang.org/std/primitive.tuple.html) `(A, B, C,
 //! ...)` to represent a "product" of types.  The language lacks a generic syntax for the converse:
 //! a choice among multiple types, also known as a sum type (or "coproduct") `A + B + C + ...`.
-//! This library provides a pattern and macros to bridge this gap.
+//! This library provides a pattern and macro to bridge this gap.
 //!
 //! # Example
 //!
 //! ```rust
-//! use choice::{Choice, choice, Never};
-//!
 //! // We can instantiate a "heterogenous" `Vec` without a custom `enum`.
+//! use choice::choice;
 //! struct A;
 //! struct B;
 //! struct C;
 //! let choices: Vec<choice![A, B, C]> = vec![
-//!     choice!(0, A),
-//!     choice!(1, B),
-//!     choice!(2, C),
+//!     choice!(0 <- A),
+//!     choice!(1 <- B),
+//!     choice!(2 <- C),
 //! ];
 //!
-//! // Furthermore, by implementing a trait for two patterns...
+//! // Furthermore, by implementing a trait for two `Choice` forms...
+//! use choice::{Choice, Never};
 //! trait T {}
 //! impl<T1: T> T for Choice<T1, Never> {}
 //! impl<T1: T, T2: T> T for Choice<T1, T2> {}
@@ -36,8 +36,8 @@
 //!
 //! # Composition Pattern
 //!
-//! The pattern may be a bit counterintuitive the first time you see it. The first step is to use
-//! [`Choice::new`] to build a base variant on top of [`Never`]:
+//! The underlying pattern may be a bit counterintuitive the first time you see it. The first step
+//! is to use [`Choice::new`] to build a base variant on top of [`Never`]:
 //!
 //! ```rust
 //! use choice::{Choice, Never};
@@ -103,7 +103,7 @@
 //! [stateright::actor::Actor](https://docs.rs/stateright/latest/stateright/actor/trait.Actor.html#foreign-impls)
 //! for a real-world example from another library.
 //!
-//! # Macros
+//! # Macro
 //!
 //! The [`choice!`] macro provides syntactic sugar for a type or value of the above pattern, which
 //! is particularly useful when there are many choices:
@@ -111,28 +111,27 @@
 //! ```rust
 //! # use choice::{choice, Choice, Never};
 //! let x1: choice![u64, &'static str, char, String, i8] =
-//!     choice!(2, 'x');
+//!     choice!(2 <- 'x');
 //! let x2: Choice<u64, Choice<&'static str, Choice<char, Choice<String, Choice<i8, Never>>>>> =
 //!     Choice::new('x').or().or();
 //! assert_eq!(x1, x2);
 //! ```
 //!
-//! The [`choice_at!`] macro provides syntactic sugar for pattern matching on a choice. Rust is
-//! unable to determine that the base case `Never` in uninhabited, so there is also a
-//! [`choice_unreachable!`] macro to appease the [exhaustiveness
-//! checker](https://rustc-dev-guide.rust-lang.org/pat-exhaustive-checking.html).
+//! That macro also provides syntactic sugar for pattern matching on a `Choice`. Rust is unable to
+//! determine that the base case `Never` in uninhabited, so there is also a form to appease the
+//! [exhaustiveness checker](https://rustc-dev-guide.rust-lang.org/pat-exhaustive-checking.html).
 //!
 //! ```rust
-//! # use choice::{choice, choice_at, choice_unreachable};
-//! let c: choice![u8, char] = choice!(1, '?');
+//! # use choice::choice;
+//! let c: choice![u8, char] = choice!(1 <- '?');
 //! match c {
-//!     choice_at!(0, v) => {
+//!     choice!(0 -> v) => {
 //!         panic!("Unexpected match: {}", v);
 //!     }
-//!     choice_at!(1, v) => {
+//!     choice!(1 -> v) => {
 //!         assert_eq!(v, '?');
 //!     }
-//!     choice_unreachable!(2) => {
+//!     choice!(2 -> !) => {
 //!         unreachable!();
 //!     }
 //! }
@@ -213,107 +212,67 @@ impl Display for Never {
     }
 }
 
-/// Syntactic sugar for a type representing a [`Choice`] between multiple types or a value in this
-/// `Choice`.
+/// Syntactic sugar for (1) a [`Choice`] among types, (2) a value inhabiting a `Choice`, and (3)
+/// destructuring for one of these values.
 ///
-/// # Example
-///
-/// ```rust
-/// use choice::choice;
-/// let c: choice![u64, &'static str, char, String, i8] =
-///     choice!(2, 'c'); //           ^^^^ index 2
-/// ```
-#[macro_export]
-macro_rules! choice {
-    // Types.
-    [$t:ty] => ($crate::Choice<$t, $crate::Never>);
-    [$t1:ty, $($t2:ty),+] => ($crate::Choice<$t1, choice![$($t2),+]>);
-
-    // Values.
-    (0, $x:expr) => ($crate::Choice::new($x));
-    (1, $x:expr) => (choice!(0, $x).or());
-    (2, $x:expr) => (choice!(1, $x).or());
-    (3, $x:expr) => (choice!(2, $x).or());
-    (4, $x:expr) => (choice!(3, $x).or());
-    (5, $x:expr) => (choice!(4, $x).or());
-    (6, $x:expr) => (choice!(5, $x).or());
-    (7, $x:expr) => (choice!(6, $x).or());
-    (8, $x:expr) => (choice!(7, $x).or());
-    (9, $x:expr) => (choice!(8, $x).or());
-}
-
-/// Syntactic sugar for destructuring a [`Choice`] between multiple types.
-///
-/// See also [`choice_unreachable`].
-///
-/// # Example
-///
-/// ```rust
-/// use choice::{choice, choice_at, choice_unreachable};
-/// let c: choice![u8, char] = choice!(1, '?');
-/// match c {
-///     choice_at!(0, v) => {
-///         panic!("Unexpected match: {}", v);
-///     }
-///     choice_at!(1, v) => {
-///         assert_eq!(v, '?');
-///     }
-///     choice_unreachable!(2) => {
-///         unreachable!();
-///     }
-/// }
-/// ```
-#[macro_export]
-macro_rules! choice_at {
-    (0, $v:ident) => ($crate::L($v));
-    (1, $v:ident) => ($crate::R(choice_at!(0, $v)));
-    (2, $v:ident) => ($crate::R(choice_at!(1, $v)));
-    (3, $v:ident) => ($crate::R(choice_at!(2, $v)));
-    (4, $v:ident) => ($crate::R(choice_at!(3, $v)));
-    (5, $v:ident) => ($crate::R(choice_at!(4, $v)));
-    (6, $v:ident) => ($crate::R(choice_at!(5, $v)));
-    (7, $v:ident) => ($crate::R(choice_at!(6, $v)));
-    (8, $v:ident) => ($crate::R(choice_at!(7, $v)));
-    (9, $v:ident) => ($crate::R(choice_at!(8, $v)));
-}
-
-/// Syntactic sugar for an unreachable [`Choice`], which is only needed because the Rust
-/// exhaustiveness checker is unable to infer that [`Never`] is uninhabited.
-///
-/// See also [`choice_at`].
-///
-/// This macro will no longer be necessary once
+/// Note: the `choice!(1 -> ?)`/etc forms should no longer be necessary once
 /// [`exhaustive_patterns`](https://doc.rust-lang.org/stable/unstable-book/language-features/exhaustive-patterns.html)
 /// stabilizes.
 ///
 /// # Example
 ///
 /// ```rust
-/// use choice::{choice, choice_at, choice_unreachable};
-/// let c: choice![u8, char] = choice!(1, '?');
+/// use choice::choice;
+/// let c: choice![u64, &'static str, char] =
+///     choice!(2 <- 'c'); //         ^^^^ index 2
 /// match c {
-///     choice_at!(0, v) => {
-///         panic!("Unexpected match: {}", v);
-///     }
-///     choice_at!(1, v) => {
-///         assert_eq!(v, '?');
-///     }
-///     choice_unreachable!(2) => {
-///         unreachable!();
-///     }
+///     choice!(0 -> v) => unreachable!("v: u64"),
+///     choice!(1 -> v) => unreachable!("v: &'static str"),
+///     choice!(2 -> v) => assert_eq!(v, 'c'),
+///     choice!(3 -> !) => unreachable!("v: Never"),
 /// }
 /// ```
 #[macro_export]
-macro_rules! choice_unreachable {
-    (1) => ($crate::R(_));
-    (2) => ($crate::R(choice_unreachable!(1)));
-    (3) => ($crate::R(choice_unreachable!(2)));
-    (4) => ($crate::R(choice_unreachable!(3)));
-    (5) => ($crate::R(choice_unreachable!(4)));
-    (6) => ($crate::R(choice_unreachable!(5)));
-    (7) => ($crate::R(choice_unreachable!(6)));
-    (8) => ($crate::R(choice_unreachable!(7)));
-    (9) => ($crate::R(choice_unreachable!(8)));
+macro_rules! choice {
+    // Type construction.
+    [$t:ty] => ($crate::Choice<$t, $crate::Never>);
+    [$t1:ty, $($t2:ty),+] => ($crate::Choice<$t1, choice![$($t2),+]>);
+
+    // Value construction.
+    (0 <- $x:expr) => ($crate::Choice::new($x));
+    (1 <- $x:expr) => (choice!(0 <- $x).or());
+    (2 <- $x:expr) => (choice!(1 <- $x).or());
+    (3 <- $x:expr) => (choice!(2 <- $x).or());
+    (4 <- $x:expr) => (choice!(3 <- $x).or());
+    (5 <- $x:expr) => (choice!(4 <- $x).or());
+    (6 <- $x:expr) => (choice!(5 <- $x).or());
+    (7 <- $x:expr) => (choice!(6 <- $x).or());
+    (8 <- $x:expr) => (choice!(7 <- $x).or());
+    (9 <- $x:expr) => (choice!(8 <- $x).or());
+
+    // Value destructuring for the base `Never` type.
+    (0 -> !) => (compile_error!("Index 0 cannot be uninhabited."));
+    (1 -> !) => ($crate::R(_));
+    (2 -> !) => ($crate::R(choice!(1 -> !)));
+    (3 -> !) => ($crate::R(choice!(2 -> !)));
+    (4 -> !) => ($crate::R(choice!(3 -> !)));
+    (5 -> !) => ($crate::R(choice!(4 -> !)));
+    (6 -> !) => ($crate::R(choice!(5 -> !)));
+    (7 -> !) => ($crate::R(choice!(6 -> !)));
+    (8 -> !) => ($crate::R(choice!(7 -> !)));
+    (9 -> !) => ($crate::R(choice!(8 -> !)));
+
+    // Value destructuring for possible choices.
+    (0 -> $v:ident) => ($crate::L($v));
+    (1 -> $v:ident) => ($crate::R(choice!(0 -> $v)));
+    (2 -> $v:ident) => ($crate::R(choice!(1 -> $v)));
+    (3 -> $v:ident) => ($crate::R(choice!(2 -> $v)));
+    (4 -> $v:ident) => ($crate::R(choice!(3 -> $v)));
+    (5 -> $v:ident) => ($crate::R(choice!(4 -> $v)));
+    (6 -> $v:ident) => ($crate::R(choice!(5 -> $v)));
+    (7 -> $v:ident) => ($crate::R(choice!(6 -> $v)));
+    (8 -> $v:ident) => ($crate::R(choice!(7 -> $v)));
+    (9 -> $v:ident) => ($crate::R(choice!(8 -> $v)));
 }
 
 #[cfg(test)]
@@ -322,63 +281,63 @@ mod test {
 
     #[test]
     fn can_compare() {
-        let c1: choice![&'static str, char] = choice!(0, "a");
-        let c2: choice![&'static str, char] = choice!(0, "b");
-        let c3: choice![&'static str, char] = choice!(1, 'a');
-        let c4: choice![&'static str, char] = choice!(1, 'b');
+        let c1: choice![&'static str, char] = choice!(0 <- "a");
+        let c2: choice![&'static str, char] = choice!(0 <- "b");
+        let c3: choice![&'static str, char] = choice!(1 <- 'a');
+        let c4: choice![&'static str, char] = choice!(1 <- 'b');
 
         assert!(c1 < c2);
         assert!(c2 < c3); // leftmost element is considered smallest
         assert!(c3 < c4);
 
-        assert_eq!(c1, choice!(0, "a"));
-        assert_eq!(c2, choice!(0, "b"));
-        assert_eq!(c3, choice!(1, 'a'));
-        assert_eq!(c4, choice!(1, 'b'));
+        assert_eq!(c1, choice!(0 <- "a"));
+        assert_eq!(c2, choice!(0 <- "b"));
+        assert_eq!(c3, choice!(1 <- 'a'));
+        assert_eq!(c4, choice!(1 <- 'b'));
 
         // Elements with unmatched positions are never equal, even if the values are equal.
-        let c1: choice![char, char] = choice!(0, 'a');
-        let c2: choice![char, char] = choice!(1, 'a');
+        let c1: choice![char, char] = choice!(0 <- 'a');
+        let c2: choice![char, char] = choice!(1 <- 'a');
         assert_ne!(c1, c2);
     }
 
     #[test]
     fn can_debug() {
-        let c1: choice![&'static str, char] = choice!(0, "a");
-        let c2: choice![&'static str, char] = choice!(1, 'b');
+        let c1: choice![&'static str, char] = choice!(0 <- "a");
+        let c2: choice![&'static str, char] = choice!(1 <- 'b');
         assert_eq!(format!("{:?}", c1), "\"a\"");
         assert_eq!(format!("{:?}", c2), "'b'");
     }
 
     #[test]
     fn can_display() {
-        let c1: choice![&'static str, char] = choice!(0, "a");
-        let c2: choice![&'static str, char] = choice!(1, 'b');
+        let c1: choice![&'static str, char] = choice!(0 <- "a");
+        let c2: choice![&'static str, char] = choice!(1 <- 'b');
         assert_eq!(format!("{}", c1), "a");
         assert_eq!(format!("{}", c2), "b");
     }
 
     #[test]
     fn can_destructure() {
-        let c1: choice![&'static str, char] = choice!(0, "a");
-        if let choice_at!(0, v) = c1 {
+        let c1: choice![&'static str, char] = choice!(0 <- "a");
+        if let choice!(0 -> v) = c1 {
             assert_eq!(v, "a");
         } else {
             panic!("Expected match.");
         }
-        if let choice_at!(1, _v) = c1 {
+        if let choice!(1 -> _v) = c1 {
             panic!("Unexpected match.");
         }
 
-        let c2: choice![&'static str, char] = choice!(1, 'b');
+        let c2: choice![&'static str, char] = choice!(1 <- 'b');
         match c2 {
-            choice_at!(0, _v) => {
+            choice!(0 -> _v) => {
                 panic!("Unexpected match.");
             }
-            choice_at!(1, v) => {
+            choice!(1 -> v) => {
                 assert_eq!(v, 'b');
             }
-            choice_unreachable!(2) => {
+            choice!(2 -> !) => {
                 unreachable!();
             }
         }
@@ -387,10 +346,10 @@ mod test {
     #[test]
     fn smoke_test() {
         let choices: Vec<choice![u8, char, &'static str, String]> = vec![
-            choice!(0, 1),
-            choice!(1, '2'),
-            choice!(2, "3"),
-            choice!(3, "4".to_string()),
+            choice!(0 <- 1),
+            choice!(1 <- '2'),
+            choice!(2 <- "3"),
+            choice!(3 <- "4".to_string()),
         ];
         assert_eq!(
             format!("{:?}", choices),
@@ -402,10 +361,10 @@ mod test {
             Choice::new("4".to_string()).or().or().or(),
         ]);
         assert_ne!(choices, vec![
-            choice!(0, 1),
-            choice!(1, '2'),
-            choice!(2, "three"),
-            choice!(3, "4".to_string()),
+            choice!(0 <- 1),
+            choice!(1 <- '2'),
+            choice!(2 <- "three"),
+            choice!(3 <- "4".to_string()),
         ]);
     }
 }
