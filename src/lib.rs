@@ -94,6 +94,10 @@
 //!     }
 //! }
 //! ```
+//!
+//! # Features
+//!
+//! Enable the `serde` feature for serialization/deserialization.
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
