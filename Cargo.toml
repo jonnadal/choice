@@ -10,3 +10,9 @@ repository = "https://github.com/jonnadal/choice"
 readme = "README.md"
 categories = ["data-structures", "mathematics", "rust-patterns"]
 keywords = ["coproduct", "either", "sum", "union", "variant"]
+
+[dependencies]
+serde = { version = "1.0", optional = true, features = ["derive"] }
+
+[package.metadata.docs.rs]
+features = ["serde"]

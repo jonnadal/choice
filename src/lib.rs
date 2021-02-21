@@ -95,6 +95,8 @@
 //! }
 //! ```
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Debug, Formatter};
 
 #[derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -102,6 +104,7 @@ use std::fmt::{Display, Debug, Formatter};
 /// types -- `Choice<C, Choice<A, B>>` for instance.
 ///
 /// See the [top-level crate docs](crate) for more details.
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub enum Choice<L, R> {
     /// The "left" case.
     L(L),
