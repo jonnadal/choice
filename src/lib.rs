@@ -185,6 +185,24 @@ impl<A> Choice<A, Never> {
     }
 }
 
+impl<A, B> Display for Choice<A, B> where A: Display, B: Display {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        match self {
+            Choice::L(v) => v.fmt(f),
+            Choice::R(v) => v.fmt(f),
+        }
+    }
+}
+
+impl<A, B> Debug for Choice<A, B> where A: Debug, B: Debug {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        match self {
+            Choice::L(v) => v.fmt(f),
+            Choice::R(v) => v.fmt(f),
+        }
+    }
+}
+
 /// Represents an uninhabited type. This is a placeholder until the built-in
 /// [never](https://doc.rust-lang.org/std/primitive.never.html) type is stabilized.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -298,23 +316,6 @@ macro_rules! choice_unreachable {
     (7) => ($crate::Choice::R(choice_unreachable!(6)));
     (8) => ($crate::Choice::R(choice_unreachable!(7)));
     (9) => ($crate::Choice::R(choice_unreachable!(8)));
-}
-
-impl<A, B> Display for Choice<A, B> where A: Display, B: Display {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        match self {
-            Choice::L(v) => v.fmt(f),
-            Choice::R(v) => v.fmt(f),
-        }
-    }
-}
-impl<A, B> Debug for Choice<A, B> where A: Debug, B: Debug {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        match self {
-            Choice::L(v) => v.fmt(f),
-            Choice::R(v) => v.fmt(f),
-        }
-    }
 }
 
 #[cfg(test)]
