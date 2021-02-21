@@ -2,11 +2,41 @@
 //! The language lacks a generic syntax for the converse: a choice among multiple types, also known
 //! as a union type `A + B + C ...` in [other programming
 //! languages](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html) (which
-//! are also related to "sum types" and "coproducts"). `enum`s serve a similar role but must be
-//! named, which also makes trait implementation more cumbersome when you want a trait to be
-//! applicable to N different variants.
+//! are also related to "sum types" and "coproducts"). `Choice` provides a pattern and some
+//! syntactic sugar to bridge this gap.
 //!
-//! `Choice` provides a pattern and some syntactic sugar to bridge this gap.
+//! # Example
+//!
+//! ```rust
+//! use choice::{Choice, choice, Never};
+//!
+//! // We can instantiate a "heterogenous" `Vec` without a custom `enum`.
+//! struct A;
+//! struct B;
+//! struct C;
+//! let choices: Vec<choice![A, B, C]> = vec![
+//!     Choice::new(A),
+//!     Choice::new(B).or(),
+//!     Choice::new(C).or().or(),
+//! ];
+//!
+//! // Furthermore, by implementing a trait for two patterns...
+//! trait T {}
+//! impl<T1: T> T for Choice<T1, Never> {}
+//! impl<T1: T, T2: T> T for Choice<T1, T2> {}
+//!
+//! // ... then for types that implement the trait, any `Choice` between those types also
+//! //     implements the trait.
+//! impl T for A {}
+//! impl T for B {}
+//! impl T for C {}
+//! fn f(t: impl T) {}
+//! for x in choices {
+//!     f(x);
+//! }
+//! ```
+//!
+//! # Composition Pattern
 //!
 //! The pattern may be a bit counterintuitive the first time you see it. The first step is to use
 //! [`Choice::new`] to build a base variant on top of [`Never`]:
@@ -17,12 +47,13 @@
 //! ```
 //!
 //! The `Never` type is uninhabitable and only serves to seed the pattern, so effectively we have a
-//! "choice" between N=1 types in the example above, only `u64`. Calling [`Choice::or`] extends a
-//! type to offer one more choice, inductively enabling a choice between N+1 types.
+//! "choice" between N=1 types in the example above because an instance of the type can only hold a
+//! `u64`. Calling [`Choice::or`] extends a type to offer one more choice, inductively enabling a
+//! choice between N+1 types.
 //!
 //! ```rust
 //! # use choice::{Choice, Never};
-//! let two_types_option_1: Choice<&'static str, Choice<u64, Never>> =
+//! let two_types_choice1: Choice<&'static str, Choice<u64, Never>> =
 //!     Choice::new(42).or();
 //! ```
 //!
@@ -31,7 +62,7 @@
 //!
 //! ```rust
 //! # use choice::{Choice, Never};
-//! let two_types_option2: Choice<&'static str, Choice<u64, Never>> =
+//! let two_types_choice2: Choice<&'static str, Choice<u64, Never>> =
 //!     Choice::new("Forty two");
 //! ````
 //!
@@ -60,6 +91,19 @@
 //! ];
 //! ```
 //!
+//! # Trait Composition
+//!
+//! Custom `enum`s serve a similar role but generally lack support for the kind of composition that
+//! `Choice` provides. For example, if types `A` and `B` implement trait `T`, a custom enum `AOrB`
+//! could also implement that trait. Unfortunately any differing choice between types would need to
+//! reimplement this trait, e.g. necessitating a type `AOrCOrD` for another scenario that needs to
+//! choose between types `A`, `C`, and `D`.
+//!
+//! By implementing trait `T` for `Choice<A: T, Never>` and `Choice<A: T, B: T>`, the trait is also
+//! implemented for any combination of choices. See the [Example](#example) section above or
+//! [stateright::actor::Actor](https://docs.rs/stateright/latest/stateright/actor/trait.Actor.html#foreign-impls)
+//! for a real-world example from another library.
+//!
 //! # Macros
 //!
 //! The [`choice!`] macro provides syntactic sugar for a type representing the above pattern, which
@@ -81,13 +125,13 @@
 //!
 //! ```rust
 //! # use choice::{Choice, choice, choice_at, choice_unreachable};
-//! let c: choice![u8, char] = Choice::new('2').or();
+//! let c: choice![u8, char] = Choice::new('?').or();
 //! match c {
 //!     choice_at!(0, v) => {
 //!         panic!("Unexpected match: {}", v);
 //!     }
 //!     choice_at!(1, v) => {
-//!         assert_eq!(v, '2');
+//!         assert_eq!(v, '?');
 //!     }
 //!     choice_unreachable!(2) => {
 //!         unreachable!();
@@ -175,13 +219,13 @@ macro_rules! choice {
 ///
 /// ```rust
 /// use choice::{Choice, choice, choice_at, choice_unreachable};
-/// let c: choice![u8, char] = Choice::new('2').or();
+/// let c: choice![u8, char] = Choice::new('?').or();
 /// match c {
 ///     choice_at!(0, v) => {
 ///         panic!("Unexpected match: {}", v);
 ///     }
 ///     choice_at!(1, v) => {
-///         assert_eq!(v, '2');
+///         assert_eq!(v, '?');
 ///     }
 ///     choice_unreachable!(2) => {
 ///         unreachable!();
@@ -215,13 +259,13 @@ macro_rules! choice_at {
 ///
 /// ```rust
 /// use choice::{Choice, choice, choice_at, choice_unreachable};
-/// let c: choice![u8, char] = Choice::new('2').or();
+/// let c: choice![u8, char] = Choice::new('?').or();
 /// match c {
 ///     choice_at!(0, v) => {
 ///         panic!("Unexpected match: {}", v);
 ///     }
 ///     choice_at!(1, v) => {
-///         assert_eq!(v, '2');
+///         assert_eq!(v, '?');
 ///     }
 ///     choice_unreachable!(2) => {
 ///         unreachable!();
