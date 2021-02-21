@@ -116,6 +116,8 @@ pub enum Choice<L, R> {
     R(R),
 }
 
+pub use Choice::{L, R};
+
 impl<A, B> Choice<A, B> {
     /// Constructs a [`Choice`] between two types, where the "decision" is of the first type.
     pub fn new(choice: A) -> Self {
