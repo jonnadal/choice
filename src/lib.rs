@@ -249,6 +249,8 @@ macro_rules! choice {
     (7 <- $x:expr) => (choice!(6 <- $x).or());
     (8 <- $x:expr) => (choice!(7 <- $x).or());
     (9 <- $x:expr) => (choice!(8 <- $x).or());
+    (10 <- $x:expr) => (choice!(9 <- $x).or());
+    (11 <- $x:expr) => (choice!(10 <- $x).or());
 
     // Value destructuring for the base `Never` type.
     (0 -> !) => (compile_error!("Index 0 cannot be uninhabited."));
@@ -261,6 +263,9 @@ macro_rules! choice {
     (7 -> !) => ($crate::R(choice!(6 -> !)));
     (8 -> !) => ($crate::R(choice!(7 -> !)));
     (9 -> !) => ($crate::R(choice!(8 -> !)));
+    (10 -> !) => ($crate::R(choice!(9 -> !)));
+    (11 -> !) => ($crate::R(choice!(10 -> !)));
+    (12 -> !) => ($crate::R(choice!(11 -> !)));
 
     // Value destructuring for possible choices.
     (0 -> $v:ident) => ($crate::L($v));
@@ -273,6 +278,8 @@ macro_rules! choice {
     (7 -> $v:ident) => ($crate::R(choice!(6 -> $v)));
     (8 -> $v:ident) => ($crate::R(choice!(7 -> $v)));
     (9 -> $v:ident) => ($crate::R(choice!(8 -> $v)));
+    (10 -> $v:ident) => ($crate::R(choice!(9 -> $v)));
+    (11 -> $v:ident) => ($crate::R(choice!(10 -> $v)));
 }
 
 #[cfg(test)]
@@ -366,5 +373,87 @@ mod test {
             choice!(2 <- "three"),
             choice!(3 <- "4".to_string()),
         ]);
+
+        #[derive(Debug, Eq, PartialEq)] struct A;
+        #[derive(Debug, Eq, PartialEq)] struct B;
+        #[derive(Debug, Eq, PartialEq)] struct C;
+        #[derive(Debug, Eq, PartialEq)] struct D;
+        #[derive(Debug, Eq, PartialEq)] struct E;
+        #[derive(Debug, Eq, PartialEq)] struct F;
+        #[derive(Debug, Eq, PartialEq)] struct G;
+        #[derive(Debug, Eq, PartialEq)] struct H;
+        #[derive(Debug, Eq, PartialEq)] struct I;
+        #[derive(Debug, Eq, PartialEq)] struct J;
+        #[derive(Debug, Eq, PartialEq)] struct K;
+        #[derive(Debug, Eq, PartialEq)] struct L;
+        let v: Vec<choice![A, B, C, D, E, F, G, H, I, J, K, L]> = vec![
+            choice!(0 <- A),
+            choice!(1 <- B),
+            choice!(2 <- C),
+            choice!(3 <- D),
+            choice!(4 <- E),
+            choice!(5 <- F),
+            choice!(6 <- G),
+            choice!(7 <- H),
+            choice!(8 <- I),
+            choice!(9 <- J),
+            choice!(10 <- K),
+            choice!(11 <- L),
+        ];
+        for (i, c) in v.into_iter().enumerate() {
+            match c {
+                choice!(0 -> v) => {
+                    assert_eq!(i, 0);
+                    assert_eq!(v, A);
+                }
+                choice!(1 -> v) => {
+                    assert_eq!(i, 1);
+                    assert_eq!(v, B);
+                }
+                choice!(2 -> v) => {
+                    assert_eq!(i, 2);
+                    assert_eq!(v, C);
+                }
+                choice!(3 -> v) => {
+                    assert_eq!(i, 3);
+                    assert_eq!(v, D);
+                }
+                choice!(4 -> v) => {
+                    assert_eq!(i, 4);
+                    assert_eq!(v, E);
+                }
+                choice!(5 -> v) => {
+                    assert_eq!(i, 5);
+                    assert_eq!(v, F);
+                }
+                choice!(6 -> v) => {
+                    assert_eq!(i, 6);
+                    assert_eq!(v, G);
+                }
+                choice!(7 -> v) => {
+                    assert_eq!(i, 7);
+                    assert_eq!(v, H);
+                }
+                choice!(8 -> v) => {
+                    assert_eq!(i, 8);
+                    assert_eq!(v, I);
+                }
+                choice!(9 -> v) => {
+                    assert_eq!(i, 9);
+                    assert_eq!(v, J);
+                }
+                choice!(10 -> v) => {
+                    assert_eq!(i, 10);
+                    assert_eq!(v, K);
+                }
+                choice!(11 -> v) => {
+                    assert_eq!(i, 11);
+                    assert_eq!(v, L);
+                }
+                choice!(12 -> !) => {
+                    unreachable!();
+                }
+            }
+        }
     }
 }
